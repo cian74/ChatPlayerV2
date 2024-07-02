@@ -1,16 +1,31 @@
 import socket
-from directkeys import PressKey,ReleaseKey, W, A, S, D 
+import time
+import ctypes
+from directkeys import PressKey,ReleaseKey, W, A, S, D
 import threading
 import time
+import pygame
+
+with open('oauthkey.txt', 'r') as file:
+    PASS = file.readline().strip()
+
 SERVER = "irc.twitch.tv"
 PORT = 6667
-PASS = "TWITCHOAUTHPASS"
 BOT = "bot"
 CHANNEL = "#cianrr"  # Ensure the channel name is prefixed with '#'
 OWNER = "cianrr"
 
 message = ""
 duration = 0
+
+pygame.init()
+
+joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
+print(joysticks)
+
+for joystick in joysticks:
+    joystick.init()
+    print("Initialized Joystick : %s" % (joystick.get_name(),))
 
 irc = socket.socket()
 irc.connect((SERVER, PORT))
@@ -22,31 +37,35 @@ for i in list(range(4))[::-1]:
     print(i+1)
     time.sleep(0.5)
 
+def readControl():
+    pygame.event.pump() 
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            break
+        if event.type == pygame.JOYBUTTONDOWN:
+            print(event)
+
 def gameControl():
     global message, duration
     while True:
         if "forward" in message.lower():
-            PressKey(W)
-            time.sleep(duration)
-            ReleaseKey(W)
+            #PressKey(W)
+            #ReleaseKey(W)
             message = ""
             duration = 0
         elif "left" in message.lower():
-            PressKey(A)
-            time.sleep(duration)
-            ReleaseKey(A)
+            #PressKey(A)
+            #ReleaseKey(A)
             message = ""
             duration = 0
         elif "down" in message.lower():
-            PressKey(S)
-            time.sleep(duration)
-            ReleaseKey(S)
+            #PressKey(S)
+            #ReleaseKey(S)
             message = ""
             duration = 0
         elif "right" in message.lower():
-            PressKey(D)
-            time.sleep(duration)
-            ReleaseKey(D)
+            #PressKey(D)
+            #ReleaseKey(D)
             message = ""
             duration = 0
         else:
@@ -119,9 +138,14 @@ def twitch():
                 user = getUser(line)
                 message, duration = getMessage(line)
                 print(user + " : " + message)
+                
 
 if __name__ == '__main__':
     t1 = threading.Thread(target = twitch)
     t1.start()
     t2 = threading.Thread(target = gameControl)
     t2.start()
+
+    while True:
+        readControl()
+        time.sleep(0.01)
