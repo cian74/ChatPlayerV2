@@ -1,11 +1,11 @@
 import socket
 import time
-import ctypes
-from directkeys import PressKey,ReleaseKey, W, A, S, D
 import threading
-import time
 import pygame
+import vgamepad as vg
+from directkeys import PressKey,ReleaseKey,W,A,S,D
 
+# Read the OAuth key from file
 with open('oauthkey.txt', 'r') as file:
     PASS = file.readline().strip()
 
@@ -15,18 +15,21 @@ BOT = "bot"
 CHANNEL = "#cianrr"  # Ensure the channel name is prefixed with '#'
 OWNER = "cianrr"
 
-message = ""
-duration = 0
-
 pygame.init()
 
-joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
-print(joysticks)
+joysticks = [pygame.joystick.Joystick(x) for x in range (pygame.joystick.get_count())]
 
 for joystick in joysticks:
     joystick.init()
-    print("Initialized Joystick : %s" % (joystick.get_name(),))
+    print(joystick)
 
+message = ""
+duration = 0
+lock = threading.Lock()
+
+gamepad = vg.VDS4Gamepad()
+
+#TODO: choice between kb vs controller
 irc = socket.socket()
 irc.connect((SERVER, PORT))
 irc.send((  "PASS " + PASS + "\r\n" +
@@ -37,87 +40,87 @@ for i in list(range(4))[::-1]:
     print(i+1)
     time.sleep(0.5)
 
-def readControl():
-    pygame.event.pump() 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            break
-        if event.type == pygame.JOYBUTTONDOWN:
-            print(event)
-
+#TODO: add keyboard presses - PressKey() - 1
 def gameControl():
     global message, duration
     while True:
-        if "forward" in message.lower():
-            #PressKey(W)
-            #ReleaseKey(W)
+        with lock:
+            msg = message.lower()
+            dur = duration
             message = ""
             duration = 0
-        elif "left" in message.lower():
-            #PressKey(A)
-            #ReleaseKey(A)
-            message = ""
-            duration = 0
-        elif "down" in message.lower():
-            #PressKey(S)
-            #ReleaseKey(S)
-            message = ""
-            duration = 0
-        elif "right" in message.lower():
-            #PressKey(D)
-            #ReleaseKey(D)
-            message = ""
-            duration = 0
-        else:
-            pass
 
+        if "forward" in msg:
+            print(f"Pressing forward for {dur} seconds")
+            gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
+            gamepad.update()
+            time.sleep(dur)
+            gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_TRIANGLE)
+            gamepad.update()
+        elif "left" in msg:
+            print(f"Pressing left for {dur} seconds")
+            gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_SQUARE)
+            gamepad.update()
+            time.sleep(dur)
+            gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_SQUARE)
+            gamepad.update()
+        elif "down" in msg:
+            print(f"Pressing left for {dur} seconds")
+            gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
+            gamepad.update()
+            time.sleep(dur)
+            gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
+            gamepad.update()
+        elif "right" in msg:
+            print(f"Pressing left for {dur} seconds")
+            gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CIRCLE)
+            gamepad.update()
+            time.sleep(dur)
+            gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CIRCLE)
+            gamepad.update()
 def twitch():
     def joinchat():
         Loading = True
         while Loading:
-            readbuffer_join = irc.recv(1024)
-            readbuffer_join = readbuffer_join.decode()
+            readbuffer_join = irc.recv(1024).decode()
             for line in readbuffer_join.split("\n")[0:-1]:
                 print(line)
                 Loading = loadingComplete(line)
 
     def loadingComplete(line):
-        if ("End of /NAMES list" in line):  # Adjusted the join confirmation check
+        if "End of /NAMES list" in line:
             print("Bot has joined " + CHANNEL + "'s Channel!")
             sendMessage(irc, "<CHAT PLAYER ENABLED>")
             sendMessage(irc, "MOVEMENT FUNCTIONS: forward, left, right, down")
             return False
-        else:
-            return True
+        return True
         
     def sendMessage(irc, message):
         messageTmp = "PRIVMSG " + CHANNEL + " :" + message
         irc.send((messageTmp + "\n").encode())
 
     def getUser(line):
-        seperate = line.split(":", 2)
-        user = seperate[1].split("!", 1)[0] 
-        return user
+        return line.split(":", 2)[1].split("!", 1)[0] 
 
     def getMessage(line):
         global message, duration
         try:
-            message = (line.split(":", 2))[2]
-            message_parts = message.rsplit(" ", 1)
-            message = message_parts[0]
-            duration = int(message_parts[1])
-            if duration > 10:
-                duration = 3
+            msg = (line.split(":", 2))[2]
+            message_parts = msg.rsplit(" ", 1)
+            msg = message_parts[0]
+            dur = int(message_parts[1])
+            if dur > 10:
+                dur = 3
         except:
-            message = ""
-            duration = 0
-        return message , duration
+            msg = ""
+            dur = 0
+        with lock:
+            message = msg
+            duration = dur
+        return msg, dur
     
     def Console(line):
-        if "PRIVMSG" in line:
-            return False
-        else:
-            return True
+        return not "PRIVMSG" in line
 
     joinchat()
 
@@ -130,22 +133,15 @@ def twitch():
             if line == "":
                 continue
             elif "PING" in line and Console(line):
-                msgg = "PONG tmi.twitch.tv\r\n".encode() # have to return a pong to stay connectedd
-                irc.send(msgg)
-                print(msgg)
+                irc.send("PONG tmi.twitch.tv\r\n".encode())
                 continue
             else:
                 user = getUser(line)
-                message, duration = getMessage(line)
-                print(user + " : " + message)
-                
+                msg, dur = getMessage(line)
+                print(f"Received message from {user}: {msg} for {dur} seconds")
 
 if __name__ == '__main__':
-    t1 = threading.Thread(target = twitch)
+    t1 = threading.Thread(target=twitch)
     t1.start()
-    t2 = threading.Thread(target = gameControl)
+    t2 = threading.Thread(target=gameControl)
     t2.start()
-
-    while True:
-        readControl()
-        time.sleep(0.01)
