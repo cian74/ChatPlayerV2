@@ -25,6 +25,7 @@ for joystick in joysticks:
 
 message = ""
 duration = 0
+condition = 0
 lock = threading.Lock()
 
 gamepad = vg.VDS4Gamepad()
@@ -42,7 +43,9 @@ for i in list(range(4))[::-1]:
 
 #TODO: add keyboard presses - PressKey() - 1
 def gameControl():
-    global message, duration
+    global message, duration, condition
+
+    condition = int(input("WHICH INPUT ARE YOU USING- 1-Controller 2-Keyboard: "))
     while True:
         with lock:
             msg = message.lower()
@@ -50,34 +53,57 @@ def gameControl():
             message = ""
             duration = 0
 
-        if "forward" in msg:
-            print(f"Pressing forward for {dur} seconds")
-            gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
-            gamepad.update()
-            time.sleep(dur)
-            gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_TRIANGLE)
-            gamepad.update()
-        elif "left" in msg:
-            print(f"Pressing left for {dur} seconds")
-            gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_SQUARE)
-            gamepad.update()
-            time.sleep(dur)
-            gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_SQUARE)
-            gamepad.update()
-        elif "down" in msg:
-            print(f"Pressing left for {dur} seconds")
-            gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
-            gamepad.update()
-            time.sleep(dur)
-            gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
-            gamepad.update()
-        elif "right" in msg:
-            print(f"Pressing left for {dur} seconds")
-            gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CIRCLE)
-            gamepad.update()
-            time.sleep(dur)
-            gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CIRCLE)
-            gamepad.update()
+        if condition == 1:
+            if "forward" in msg:
+                print(f"Pressing forward for {dur} seconds")
+                gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
+                gamepad.update()
+                time.sleep(dur)
+                gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_TRIANGLE)
+                gamepad.update()
+            elif "left" in msg:
+                print(f"Pressing left for {dur} seconds")
+                gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_SQUARE)
+                gamepad.update()
+                time.sleep(dur)
+                gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_SQUARE)
+                gamepad.update()
+            elif "down" in msg:
+                print(f"Pressing down for {dur} seconds")
+                gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
+                gamepad.update()
+                time.sleep(dur)
+                gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
+                gamepad.update()
+            elif "right" in msg:
+                print(f"Pressing right for {dur} seconds")
+                gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CIRCLE)
+                gamepad.update()
+                time.sleep(dur)
+                gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CIRCLE)
+                gamepad.update()
+
+        elif condition == 2:
+            if "forward" in msg:
+                print(f"Pressing forward for {dur} seconds")
+                PressKey(W)
+                time.sleep(dur)
+                ReleaseKey(W)
+            elif "left" in msg:
+                print(f"Pressing left for {dur} seconds")
+                PressKey(A)
+                time.sleep(dur)
+                ReleaseKey(A)
+            elif "down" in msg:
+                print(f"Pressing down for {dur} seconds")
+                PressKey(S)
+                time.sleep(dur)
+                ReleaseKey(S)
+            elif "right" in msg:
+                print(f"Pressing right for {dur} seconds")
+                PressKey(D)
+                time.sleep(dur)
+                ReleaseKey(D)
 def twitch():
     def joinchat():
         Loading = True
