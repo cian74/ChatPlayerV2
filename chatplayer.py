@@ -3,7 +3,7 @@ import time
 import threading
 import pygame
 import vgamepad as vg
-from directkeys import PressKey,ReleaseKey,W,A,S,D
+from directkeys import PressKey,ReleaseKey,W,A,S,D,SPACE
 
 # Read the OAuth key from file
 with open('oauthkey.txt', 'r') as file:
@@ -21,16 +21,18 @@ joysticks = [pygame.joystick.Joystick(x) for x in range (pygame.joystick.get_cou
 
 for joystick in joysticks:
     joystick.init()
-    print(joystick)
+    print("INPUT DEVICE DETECTED:", joystick.get_name())
 
 message = ""
 duration = 0
-condition = 0
+input_condition = 0
 lock = threading.Lock()
 
-gamepad = vg.VDS4Gamepad()
+input_condition = int(input("WHICH INPUT ARE YOU USING- 1-Controller 2-Keyboard: "))
 
-#TODO: choice between kb vs controller
+if input_condition == 1:
+    gamepad = vg.VDS4Gamepad()
+
 irc = socket.socket()
 irc.connect((SERVER, PORT))
 irc.send((  "PASS " + PASS + "\r\n" +
@@ -41,11 +43,9 @@ for i in list(range(4))[::-1]:
     print(i+1)
     time.sleep(0.5)
 
-#TODO: add keyboard presses - PressKey() - 1
 def gameControl():
-    global message, duration, condition
+    global message, duration, input_condition
 
-    condition = int(input("WHICH INPUT ARE YOU USING- 1-Controller 2-Keyboard: "))
     while True:
         with lock:
             msg = message.lower()
@@ -53,37 +53,65 @@ def gameControl():
             message = ""
             duration = 0
 
-        if condition == 1:
-            if "forward" in msg:
+        if input_condition == 1:
+            if "triangle" in msg:
                 print(f"Pressing forward for {dur} seconds")
                 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
                 gamepad.update()
                 time.sleep(dur)
                 gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_TRIANGLE)
                 gamepad.update()
-            elif "left" in msg:
+            elif "square" in msg:
                 print(f"Pressing left for {dur} seconds")
                 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_SQUARE)
                 gamepad.update()
                 time.sleep(dur)
                 gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_SQUARE)
                 gamepad.update()
-            elif "down" in msg:
+            elif "cross" in msg:
                 print(f"Pressing down for {dur} seconds")
                 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
                 gamepad.update()
                 time.sleep(dur)
                 gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
                 gamepad.update()
-            elif "right" in msg:
+            elif "circle" in msg:
                 print(f"Pressing right for {dur} seconds")
                 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CIRCLE)
                 gamepad.update()
                 time.sleep(dur)
                 gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CIRCLE)
                 gamepad.update()
+            elif "forward" in msg:
+                print(f"Pressing forward for {dur} seconds")
+                gamepad.left_joystick_float(x_value_float=0.0, y_value_float=-1.0)
+                gamepad.update()
+                time.sleep(dur)
+                gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.0)
+                gamepad.update()
+            elif "left" in msg:
+                print(f"Pressing left for {dur} seconds")
+                gamepad.left_joystick_float(x_value_float=-1.0, y_value_float=0.0)
+                gamepad.update()
+                time.sleep(dur)
+                gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.0)
+                gamepad.update()
+            elif "right" in msg:
+                print(f"Pressing right for {dur} seconds")
+                gamepad.left_joystick_float(x_value_float=1.0, y_value_float=0.0)
+                gamepad.update()
+                time.sleep(dur)
+                gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.0)
+                gamepad.update()
+            elif "down" in msg:
+                print(f"Pressing down for {dur} seconds")
+                gamepad.left_joystick_float(x_value_float=0.0, y_value_float=1.0)
+                gamepad.update()
+                time.sleep(dur)
+                gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.0)
+                gamepad.update()
 
-        elif condition == 2:
+        elif input_condition == 2:
             if "forward" in msg:
                 print(f"Pressing forward for {dur} seconds")
                 PressKey(W)
@@ -104,6 +132,12 @@ def gameControl():
                 PressKey(D)
                 time.sleep(dur)
                 ReleaseKey(D)
+            elif "space" in msg:
+                print(f"Pressing space for {dur} seconds")
+                PressKey(SPACE)
+                time.sleep(dur)
+                ReleaseKey(SPACE)
+
 def twitch():
     def joinchat():
         Loading = True

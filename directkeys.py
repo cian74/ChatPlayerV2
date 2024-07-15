@@ -7,7 +7,7 @@ W = 0x11
 A = 0x1E
 S = 0x1F
 D = 0x20
-P = 0x19
+SPACE = 0x39
 
 # C struct redefinitions 
 PUL = ctypes.POINTER(ctypes.c_ulong)
