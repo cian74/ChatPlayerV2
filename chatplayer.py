@@ -66,56 +66,56 @@ def gameControl():
 
         if input_condition == 1:
             if "triangle" in msg:
-                print(f"Pressing forward for {dur} seconds")
+                print(f"Pressing forward for {dur}")
                 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
                 gamepad.update()
                 time.sleep(dur)
                 gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_TRIANGLE)
                 gamepad.update()
             elif "square" in msg:
-                print(f"Pressing left for {dur} seconds")
+                print(f"Pressing left for {dur}")
                 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_SQUARE)
                 gamepad.update()
                 time.sleep(dur)
                 gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_SQUARE)
                 gamepad.update()
             elif "cross" in msg:
-                print(f"Pressing down for {dur} seconds")
+                print(f"Pressing down for {dur}")
                 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
                 gamepad.update()
                 time.sleep(dur)
                 gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CROSS)
                 gamepad.update()
             elif "circle" in msg:
-                print(f"Pressing right for {dur} seconds")
+                print(f"Pressing right for {dur}")
                 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CIRCLE)
                 gamepad.update()
                 time.sleep(dur)
                 gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CIRCLE)
                 gamepad.update()
             elif "forward" in msg:
-                print(f"Pressing forward for {dur} seconds")
+                print(f"Pressing forward for {dur}")
                 gamepad.left_joystick_float(x_value_float=0.0, y_value_float=-1.0)
                 gamepad.update()
                 time.sleep(dur)
                 gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.0)
                 gamepad.update()
             elif "left" in msg:
-                print(f"Pressing left for {dur} seconds")
+                print(f"Pressing left for {dur}")
                 gamepad.left_joystick_float(x_value_float=-1.0, y_value_float=0.0)
                 gamepad.update()
                 time.sleep(dur)
                 gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.0)
                 gamepad.update()
             elif "right" in msg:
-                print(f"Pressing right for {dur} seconds")
+                print(f"Pressing right for {dur}")
                 gamepad.left_joystick_float(x_value_float=1.0, y_value_float=0.0)
                 gamepad.update()
                 time.sleep(dur)
                 gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.0)
                 gamepad.update()
             elif "down" in msg:
-                print(f"Pressing down for {dur} seconds")
+                print(f"Pressing down for {dur}")
                 gamepad.left_joystick_float(x_value_float=0.0, y_value_float=1.0)
                 gamepad.update()
                 time.sleep(dur)
@@ -124,27 +124,27 @@ def gameControl():
 
         elif input_condition == 2:
             if "forward" in msg:
-                print(f"Pressing forward for {dur} seconds")
+                print(f"Pressing forward for {dur}")
                 PressKey(W)
                 time.sleep(dur)
                 ReleaseKey(W)
             elif "left" in msg:
-                print(f"Pressing left for {dur} seconds")
+                print(f"Pressing left for {dur}")
                 PressKey(A)
                 time.sleep(dur)
                 ReleaseKey(A)
             elif "down" in msg:
-                print(f"Pressing down for {dur} seconds")
+                print(f"Pressing down for {dur}")
                 PressKey(S)
                 time.sleep(dur)
                 ReleaseKey(S)
             elif "right" in msg:
-                print(f"Pressing right for {dur} seconds")
+                print(f"Pressing right for {dur}")
                 PressKey(D)
                 time.sleep(dur)
                 ReleaseKey(D)
             elif "space" in msg:
-                print(f"Pressing space for {dur} seconds")
+                print(f"Pressing space for {dur}")
                 PressKey(SPACE)
                 time.sleep(dur)
                 ReleaseKey(SPACE)
@@ -176,19 +176,28 @@ def twitch():
     def getMessage(line):
         global message, duration
         try:
-            msg = (line.split(":", 2))[2]
+            msg = (line.split(":", 2))[2].strip()
             message_parts = msg.rsplit(" ", 1)
-            msg = message_parts[0]
-            dur = int(message_parts[1])
+            if len(message_parts) > 1 and message_parts[1].isdigit():
+                msg = message_parts[0]
+                dur = int(message_parts[1])
+            #sets default duration to 3 if none is set
+            else:
+                dur = 3
             if dur > 10:
                 dur = 3
         except:
             msg = ""
-            dur = 0
+            dur = 3
         with lock:
             message = msg
             duration = dur
         return msg, dur
+    
+    #checks that message format is handled
+    def checkMessage(irc, msg):
+        user_message, dur = getMessage(msg)
+        return True
     
     def Console(line):
         return not "PRIVMSG" in line
@@ -208,8 +217,12 @@ def twitch():
                 continue
             else:
                 user = getUser(line)
-                msg, dur = getMessage(line)
-                print(f"Received message from {user}: {msg} for {dur} seconds")
+                if checkMessage(irc, line):
+                    msg, dur = getMessage(line)
+                    print(f"Received message from {user}: {msg} for {dur} seconds")
+                    with lock:
+                        message = msg
+                        duration = dur
 
 if __name__ == '__main__':
     t1 = threading.Thread(target=twitch)
