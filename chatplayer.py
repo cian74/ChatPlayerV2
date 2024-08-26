@@ -37,6 +37,7 @@ for joystick in joysticks:
 
 message = ""
 duration = 0
+message_counter = 0
 input_condition = 0
 lock = threading.Lock()
 exit_flag = False
@@ -62,7 +63,7 @@ def hotkeyListener():
         if keyboard.is_pressed('shift+backspace'):
             print('Stopped all threads')
             exit_flag = True
-        time.sleep(0.1)\
+        time.sleep(0.1)
 
 def gameControl():
     global message, duration, input_condition
@@ -161,7 +162,7 @@ def gameControl():
             time.sleep(0.1)
 
 def twitch():
-
+    #using an exit flag because it wouldnt just exit idk
     global exit_flag
     while not exit_flag:
         def joinchat():
@@ -179,7 +180,21 @@ def twitch():
                 sendMessage(irc, "MOVEMENT FUNCTIONS: forward, left, right, down")
                 return False
             return True
-            
+        
+        def countMessage(msg):
+            global message_counter
+            with lock:
+                #giving grace period if left or right is sent too much
+                if "left" or "right" in msg:
+                    message_counter += 1
+                    print("counter total:", message_counter)
+                if message_counter % 15 == 0:
+                    sleepMode()
+
+        def sleepMode():
+            sendMessage(irc, "<GRACE PERIOD GRANTED>")
+            time.sleep(10)
+
         def sendMessage(irc, message):
             messageTmp = "PRIVMSG " + CHANNEL + " :" + message
             irc.send((messageTmp + "\n").encode())
@@ -196,6 +211,7 @@ def twitch():
                     msg = message_parts[0]
                     dur = int(message_parts[1])
                 #sets default duration to 3 if none is set
+                    
                 else:
                     dur = 3
                 if dur > 10:
@@ -233,11 +249,11 @@ def twitch():
                     user = getUser(line)
                     if checkMessage(irc, line):
                         msg, dur = getMessage(line)
+                        countMessage(msg)
                         with lock:
                             message = msg
                             duration = dur
                 
-
 if __name__ == '__main__':
     t1 = threading.Thread(target=twitch)
     t1.start()
@@ -249,6 +265,3 @@ if __name__ == '__main__':
     t1.join()
     t2.join()
     t3.join()
-
-    print('program exited.')
-
