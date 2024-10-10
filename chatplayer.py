@@ -65,6 +65,9 @@ def hotkeyListener():
             exit_flag = True
         time.sleep(0.1)
 
+
+
+
 def gameControl():
     global message, duration, input_condition
 
