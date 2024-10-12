@@ -3,8 +3,9 @@ import time
 import threading
 import pygame
 import vgamepad as vg
-from directkeys import PressKey,ReleaseKey,W,A,S,D,SPACE
-import keyboard
+from directkeys import PressKey, ReleaseKey, W, A, S, D, SPACE
+import signal
+import sys
 
 print(r"""
 
@@ -29,7 +30,7 @@ OWNER = "cianrr"
 
 pygame.init()
 
-joysticks = [pygame.joystick.Joystick(x) for x in range (pygame.joystick.get_count())]
+joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
 
 for joystick in joysticks:
     joystick.init()
@@ -41,6 +42,13 @@ message_counter = 0
 input_condition = 0
 lock = threading.Lock()
 exit_flag = False
+
+def signal_handler(sig, frame):
+    global exit_flag
+    exit_flag = True
+    print('You pressed Ctrl+C!')
+
+signal.signal(signal.SIGINT, signal_handler)
 
 input_condition = int(input("WHICH INPUT ARE YOU USING- 1-Controller 2-Keyboard: "))
 
@@ -56,18 +64,7 @@ irc.send((  "PASS " + PASS + "\r\n" +
 for i in list(range(4))[::-1]:
     print(i+1)
     time.sleep(0.5)
-
-def hotkeyListener():
-    global exit_flag
-    while not exit_flag:
-        if keyboard.is_pressed('shift+backspace'):
-            print('Stopped all threads')
-            exit_flag = True
-        time.sleep(0.1)
-
-
-
-
+    
 def gameControl():
     global message, duration, input_condition
 
@@ -165,7 +162,6 @@ def gameControl():
             time.sleep(0.1)
 
 def twitch():
-    #using an exit flag because it wouldnt just exit idk
     global exit_flag
     while not exit_flag:
         def joinchat():
@@ -187,8 +183,7 @@ def twitch():
         def countMessage(msg):
             global message_counter
             with lock:
-                #giving grace period if left or right is sent too much
-                if "left" or "right" in msg:
+                if "left" in msg or "right" in msg:
                     message_counter += 1
                     print("counter total:", message_counter)
                 if message_counter % 15 == 0:
@@ -213,8 +208,6 @@ def twitch():
                 if len(message_parts) > 1 and message_parts[1].isdigit():
                     msg = message_parts[0]
                     dur = int(message_parts[1])
-                #sets default duration to 3 if none is set
-                    
                 else:
                     dur = 3
                 if dur > 10:
@@ -227,7 +220,6 @@ def twitch():
                 duration = dur
             return msg, dur
         
-        #checks that message format is handled
         def checkMessage(irc, msg):
             user_message, dur = getMessage(msg)
             return True
@@ -237,7 +229,7 @@ def twitch():
 
         joinchat()
 
-        while True:
+        while not exit_flag:
             try: 
                 readbuffer = irc.recv(1024).decode()
             except:
@@ -262,9 +254,7 @@ if __name__ == '__main__':
     t1.start()
     t2 = threading.Thread(target=gameControl)
     t2.start()
-    t3 = threading.Thread(target=hotkeyListener)
-    t3.start()
 
     t1.join()
     t2.join()
-    t3.join()
+    print("Program terminated.")
