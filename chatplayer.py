@@ -144,6 +144,8 @@ def handle_messages():
                 print(f"Messsage: {message}, Duration: {duration}")
             
                 active_tasks.append(thread_pool.submit(gameControl, message, duration))
+        if not line:
+            print("could not receive message")
                 
     
 thread_pool.submit(handle_messages)

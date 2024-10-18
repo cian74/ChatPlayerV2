@@ -13,8 +13,14 @@ class Twitch:
         self.message_counter = 0
 
         # Load OAuth key from file
-        with open('oauthkey.txt', 'r') as file:
-            self.oauth_key = file.readline().strip()
+        try:
+            with open('oauthkey.txt', 'r') as file:
+                self.oauth_key = file.readline().strip()
+        except FileNotFoundError:
+            print("Error: oauthkey.txt not found. Please create the file and add your OAuth key from https://twitchapps.com/tmi/")
+            raise
+        except Exception as e:
+            print(f"Error reading oathkey.txt {e}")
 
         self.irc = socket.socket()
         self.connect()
@@ -25,10 +31,13 @@ class Twitch:
 
     def connect(self):
         """Connect to the Twitch IRC server and join the channel."""
-        self.irc.connect((self.server, self.port))
-        self.irc.send((f"PASS {self.oauth_key}\r\nNICK {self.bot}\r\nJOIN {self.channel}\r\n").encode())
-        print(f"Connecting to {self.channel}'s channel...")
-
+        try:
+            self.irc.connect((self.server, self.port))
+            self.irc.send((f"PASS {self.oauth_key}\r\nNICK {self.bot}\r\nJOIN {self.channel}\r\n").encode())
+            print(f"Connecting to {self.channel}'s channel...")
+        except socket.error as e:
+            print(f"Error connecting to {self.channel}'s channel: {e}")
+            raise
 
     def send_message(self, message):
         """Send a message to the Twitch chat."""
